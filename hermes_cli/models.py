@@ -56,6 +56,23 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     ("openai/gpt-5.4-nano",             ""),
 ]
 
+_GITHUB_COPILOT_DEFAULT_MODELS = [
+    "gpt-5.4",
+    "gpt-5.4-mini",
+    "gpt-5-mini",
+    "gpt-5.3-codex",
+    "gpt-5.2-codex",
+    "gpt-4.1",
+    "gpt-4o",
+    "gpt-4o-mini",
+    "claude-opus-4.6",
+    "claude-sonnet-4.6",
+    "claude-sonnet-4.5",
+    "claude-haiku-4.5",
+    "gemini-2.5-pro",
+    "grok-code-fast-1",
+]
+
 _PROVIDER_MODELS: dict[str, list[str]] = {
     "nous": [
         "anthropic/claude-opus-4.6",
@@ -96,38 +113,8 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     "copilot-acp": [
         "copilot-acp",
     ],
-    "copilot": [
-        "gpt-5.4",
-        "gpt-5.4-mini",
-        "gpt-5-mini",
-        "gpt-5.3-codex",
-        "gpt-5.2-codex",
-        "gpt-4.1",
-        "gpt-4o",
-        "gpt-4o-mini",
-        "claude-opus-4.6",
-        "claude-sonnet-4.6",
-        "claude-sonnet-4.5",
-        "claude-haiku-4.5",
-        "gemini-2.5-pro",
-        "grok-code-fast-1",
-    ],
-    "copilot-vscode": [
-        "gpt-5.4",
-        "gpt-5.4-mini",
-        "gpt-5-mini",
-        "gpt-5.3-codex",
-        "gpt-5.2-codex",
-        "gpt-4.1",
-        "gpt-4o",
-        "gpt-4o-mini",
-        "claude-opus-4.6",
-        "claude-sonnet-4.6",
-        "claude-sonnet-4.5",
-        "claude-haiku-4.5",
-        "gemini-2.5-pro",
-        "grok-code-fast-1",
-    ],
+    "copilot": _GITHUB_COPILOT_DEFAULT_MODELS,
+    "copilot-vscode": _GITHUB_COPILOT_DEFAULT_MODELS,
     "zai": [
         "glm-5",
         "glm-5-turbo",

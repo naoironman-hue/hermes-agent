@@ -38,7 +38,8 @@ import httpx
 import yaml
 
 from hermes_cli.config import get_hermes_home, get_config_path
-from hermes_constants import OPENROUTER_BASE_URL
+from hermes_cli.copilot_auth import VSCODE_OAUTH_CLIENT_ID
+from hermes_constants import OPENROUTER_BASE_URL, display_hermes_home as _dhh
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         auth_type="oauth_device_code",
         inference_base_url=DEFAULT_GITHUB_MODELS_BASE_URL,
         portal_base_url="https://github.com",
-        client_id="Iv1.b507a08c87ecfe98",
+        client_id=VSCODE_OAUTH_CLIENT_ID,
         scope="read:user",
     ),
     "zai": ProviderConfig(
@@ -747,7 +748,7 @@ def resolve_provider(
         "github": "copilot", "github-copilot": "copilot",
         "github-models": "copilot", "github-model": "copilot",
         "github-copilot-acp": "copilot-acp", "copilot-acp-agent": "copilot-acp",
-        "vscode-copilot": "copilot-vscode", "copilot-vsc": "copilot-vscode", "vscode": "copilot-vscode",
+        "vscode-copilot": "copilot-vscode", "copilot-vsc": "copilot-vscode",
         "aigateway": "ai-gateway", "vercel": "ai-gateway", "vercel-ai-gateway": "ai-gateway",
         "opencode": "opencode-zen", "zen": "opencode-zen",
         "hf": "huggingface", "hugging-face": "huggingface", "huggingface-hub": "huggingface",
@@ -1935,7 +1936,14 @@ def get_codex_auth_status() -> Dict[str, Any]:
 
 
 def get_copilot_vscode_auth_status() -> Dict[str, Any]:
-    """Status snapshot for GitHub Copilot (VSCode) auth."""
+    """Status snapshot for GitHub Copilot (VSCode) auth.
+    
+    Returns dict with:
+        - logged_in: bool - Whether valid GitHub token exists
+        - base_url: str | None - Inference API base URL
+        - copilot_token_expires_at: int | None - Token expiry timestamp
+        - has_github_token: bool - Whether GitHub OAuth token is stored
+    """
     state = get_provider_auth_state("copilot-vscode")
     if not state:
         return {
@@ -2377,7 +2385,6 @@ def _login_openai_codex(args, pconfig: ProviderConfig) -> None:
     config_path = _update_config_for_provider("openai-codex", creds.get("base_url", DEFAULT_CODEX_BASE_URL))
     print()
     print("Login successful!")
-    from hermes_constants import display_hermes_home as _dhh
     print(f"  Auth state: {_dhh()}/auth.json")
     print(f"  Config updated: {config_path} (model.provider=openai-codex)")
 
@@ -2669,10 +2676,19 @@ def _login_copilot_vscode(args, pconfig: ProviderConfig) -> None:
         # Store tokens in auth.json under providers.copilot-vscode
         with _auth_store_lock():
             auth_store = _load_auth_store()
+            
+            # Validate credentials with defensive key access
+            github_token = creds.get("github_token", "")
+            copilot_token = creds.get("copilot_token", "")
+            copilot_token_expires_at = creds.get("copilot_token_expires_at", 0)
+            
+            if not github_token or not copilot_token:
+                raise ValueError("Login failed: missing required credentials")
+            
             state = {
-                "github_token": creds["github_token"],
-                "copilot_token": creds["copilot_token"],
-                "copilot_token_expires_at": creds["copilot_token_expires_at"],
+                "github_token": github_token,
+                "copilot_token": copilot_token,
+                "copilot_token_expires_at": copilot_token_expires_at,
             }
             _save_provider_state(auth_store, "copilot-vscode", state)
             saved_to = _save_auth_store(auth_store)
@@ -2682,8 +2698,7 @@ def _login_copilot_vscode(args, pconfig: ProviderConfig) -> None:
         
         print()
         print("Login successful!")
-        from hermes_constants import display_hermes_home as _dhh
-        print(f"  Auth state: {saved_to}")
+        print(f"  Auth state: {_dhh()}/auth.json")
         print(f"  Config updated: {config_path} (model.provider=copilot-vscode)")
 
         # Fetch and display available models
@@ -2752,7 +2767,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
         config_path = _update_config_for_provider("nous", inference_base_url)
         print()
         print("Login successful!")
-        print(f"  Auth state: {saved_to}")
+        print(f"  Auth state: {_dhh()}/auth.json")
         print(f"  Config updated: {config_path} (model.provider=nous)")
 
         try:

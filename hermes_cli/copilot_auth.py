@@ -25,7 +25,7 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,9 @@ COPILOT_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
 
 # VSCode OAuth client ID (for copilot-vscode provider)
 VSCODE_OAUTH_CLIENT_ID = "Iv1.b507a08c87ecfe98"
+
+# Token refresh settings
+COPILOT_TOKEN_REFRESH_BUFFER_SECONDS = 300  # 5 min safety margin to avoid mid-request expiry
 
 # Copilot API constants
 COPILOT_TOKEN_EXCHANGE_URL = "https://api.github.com/copilot_internal/v2/token"
@@ -276,7 +279,7 @@ def copilot_device_code_login(
 
 # ─── VSCode Copilot Token Exchange ────────────────────────────────────────
 
-def exchange_github_token_for_copilot(github_token: str) -> dict:
+def exchange_github_token_for_copilot(github_token: str) -> Dict[str, Any]:
     """Exchange a GitHub OAuth token for a short-lived Copilot token.
 
     This implements the VSCode Copilot authentication flow's second step:
@@ -348,13 +351,13 @@ def exchange_github_token_for_copilot(github_token: str) -> dict:
     if not isinstance(copilot_token, str) or not copilot_token.strip():
         raise ValueError(
             "Copilot token exchange response missing 'token' field. "
-            f"Response: {json.dumps(data)[:200]}"
+            "Response contained unexpected structure"
         )
 
     if not isinstance(expires_at, (int, float)) or expires_at <= 0:
         raise ValueError(
             "Copilot token exchange response missing valid 'expires_at' field. "
-            f"Response: {json.dumps(data)[:200]}"
+            "Response contained unexpected token field structure"
         )
 
     return {
@@ -363,7 +366,7 @@ def exchange_github_token_for_copilot(github_token: str) -> dict:
     }
 
 
-def get_copilot_token_with_refresh(provider_state: dict) -> str:
+def get_copilot_token_with_refresh(provider_state: Dict[str, Any]) -> str:
     """Get a valid Copilot token, refreshing if needed.
 
     Implements automatic token refresh with a 5-minute expiry buffer to avoid
@@ -397,7 +400,7 @@ def get_copilot_token_with_refresh(provider_state: dict) -> str:
 
     if copilot_token and isinstance(expires_at, (int, float)):
         # Token is valid if it won't expire within the next 5 minutes
-        buffer_seconds = 300  # 5 minutes
+        buffer_seconds = COPILOT_TOKEN_REFRESH_BUFFER_SECONDS
         if float(expires_at) > (time.time() + buffer_seconds):
             logger.debug(
                 "Copilot token still valid (expires in %.1f minutes)",
@@ -426,7 +429,7 @@ def copilot_vscode_device_code_login(
     *,
     host: str = "github.com",
     timeout_seconds: float = 300,
-) -> Optional[dict]:
+) -> Optional[Dict[str, Any]]:
     """Run the VSCode OAuth device code flow for GitHub Copilot.
 
     This implements the two-step VSCode authentication flow:

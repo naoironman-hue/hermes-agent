@@ -152,6 +152,10 @@ from hermes_constants import OPENROUTER_BASE_URL
 
 logger = logging.getLogger(__name__)
 
+# OAuth provider IDs from registry (used by login/logout commands)
+from hermes_cli.auth import PROVIDER_REGISTRY
+_OAUTH_PROVIDER_IDS = sorted([pid for pid, cfg in PROVIDER_REGISTRY.items() if 'oauth' in cfg.auth_type])
+
 
 def _relative_time(ts) -> str:
     """Format a timestamp as relative time (e.g., '2h ago', 'yesterday')."""
@@ -4391,11 +4395,9 @@ For more help on a command:
         description="Run OAuth device authorization flow for Hermes CLI"
     )
     # Dynamically build list of OAuth providers from registry
-    from hermes_cli.auth import PROVIDER_REGISTRY
-    oauth_provider_ids = [pid for pid, cfg in PROVIDER_REGISTRY.items() if 'oauth' in cfg.auth_type]
     login_parser.add_argument(
         "--provider",
-        choices=sorted(oauth_provider_ids),
+        choices=_OAUTH_PROVIDER_IDS,
         default=None,
         help="Provider to authenticate with (default: nous)"
     )
@@ -4450,7 +4452,7 @@ For more help on a command:
     # Dynamically build list of OAuth providers from registry (same as login)
     logout_parser.add_argument(
         "--provider",
-        choices=sorted(oauth_provider_ids),
+        choices=_OAUTH_PROVIDER_IDS,
         default=None,
         help="Provider to log out from (default: active provider)"
     )
